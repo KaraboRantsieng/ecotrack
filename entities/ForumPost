@@ -1,0 +1,99 @@
+{
+  "name": "ForumPost",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the post"
+    },
+    "content": {
+      "type": "string",
+      "description": "Content of the post"
+    },
+    "author_email": {
+      "type": "string",
+      "description": "Email of the post author"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Name of the author"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "tips_tricks",
+        "success_stories",
+        "questions",
+        "equipment",
+        "locations",
+        "general"
+      ],
+      "default": "general",
+      "description": "Category of the post"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "liked_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Emails of users who liked this post"
+    },
+    "reply_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of replies"
+    },
+    "parent_post_id": {
+      "type": "string",
+      "description": "ID of parent post if this is a reply"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether post is pinned by admin"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional image attachment"
+    }
+  },
+  "required": [
+    "title",
+    "content",
+    "author_email",
+    "author_name"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": {
+      "$or": [
+        {
+          "author_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "author_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

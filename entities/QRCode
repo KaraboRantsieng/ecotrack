@@ -1,0 +1,71 @@
+{
+  "name": "QRCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Unique QR code identifier"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "item_preset",
+        "collection_point"
+      ],
+      "description": "Type of QR code"
+    },
+    "category": {
+      "type": "string",
+      "description": "Pre-set item category"
+    },
+    "estimated_weight_kg": {
+      "type": "number",
+      "description": "Estimated weight for the item"
+    },
+    "location": {
+      "type": "string",
+      "description": "Collection point location"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description or instructions"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the QR code is active"
+    },
+    "scan_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of times this QR code has been scanned"
+    },
+    "data": {
+      "type": "object",
+      "description": "Additional data stored in the QR code",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "code",
+    "type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

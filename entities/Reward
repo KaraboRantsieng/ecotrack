@@ -1,0 +1,82 @@
+{
+  "name": "Reward",
+  "type": "object",
+  "properties": {
+    "collector_email": {
+      "type": "string",
+      "description": "Email of the collector"
+    },
+    "points_redeemed": {
+      "type": "number",
+      "description": "Points used for this reward"
+    },
+    "reward_type": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "airtime",
+        "goods",
+        "other"
+      ],
+      "description": "Type of reward"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Monetary value of reward"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Status of reward payment"
+    },
+    "payment_reference": {
+      "type": "string",
+      "description": "Payment reference number"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "collector_email",
+    "points_redeemed",
+    "reward_type",
+    "amount"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

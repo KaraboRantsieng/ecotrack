@@ -1,0 +1,110 @@
+{
+  "name": "PayoutRequest",
+  "type": "object",
+  "properties": {
+    "collector_email": {
+      "type": "string",
+      "description": "Email of the collector requesting payout"
+    },
+    "collector_name": {
+      "type": "string",
+      "description": "Name of the collector"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount requested for payout"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "mobile_money",
+        "bank_transfer",
+        "cash",
+        "e_wallet"
+      ],
+      "description": "Payment method for this payout"
+    },
+    "payment_details": {
+      "type": "string",
+      "description": "Account/phone number for payment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "completed"
+      ],
+      "default": "pending",
+      "description": "Status of the payout request"
+    },
+    "request_notes": {
+      "type": "string",
+      "description": "Notes from the collector"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Notes from admin about the payout"
+    },
+    "payment_reference": {
+      "type": "string",
+      "description": "Reference number for the payment transaction"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Email of admin who approved"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the payout was approved"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the payment was completed"
+    }
+  },
+  "required": [
+    "collector_email",
+    "amount",
+    "payment_method"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

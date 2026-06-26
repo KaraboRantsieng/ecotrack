@@ -1,0 +1,74 @@
+{
+  "name": "FraudAlert",
+  "type": "object",
+  "properties": {
+    "alert_type": {
+      "type": "string",
+      "enum": [
+        "duplicate_serial_ai_photo",
+        "duplicate_serial_psn_badge"
+      ],
+      "description": "Where the duplicate was detected"
+    },
+    "serial_number": {
+      "type": "string",
+      "description": "The duplicate serial / PSN / IMEI detected"
+    },
+    "identifier_type": {
+      "type": "string",
+      "description": "IMEI, Serial Number, PSN, SSID, MAC, etc."
+    },
+    "collector_email": {
+      "type": "string",
+      "description": "Email of the collector who triggered the alert"
+    },
+    "collector_name": {
+      "type": "string",
+      "description": "Name of the collector who triggered the alert"
+    },
+    "existing_item_code": {
+      "type": "string",
+      "description": "Item code of the already-logged duplicate"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Photo in which the duplicate was detected"
+    },
+    "location": {
+      "type": "string",
+      "description": "Collection location at time of attempt"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether an admin has read/dismissed this alert"
+    }
+  },
+  "required": [
+    "alert_type",
+    "serial_number",
+    "collector_email"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

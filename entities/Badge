@@ -1,0 +1,90 @@
+{
+  "name": "Badge",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the badge"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of how to earn this badge"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon name for the badge"
+    },
+    "color": {
+      "type": "string",
+      "description": "Color theme for the badge"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "collection",
+        "points",
+        "weight",
+        "community",
+        "special"
+      ],
+      "description": "Category of the badge"
+    },
+    "criteria_type": {
+      "type": "string",
+      "enum": [
+        "total_collections",
+        "total_points",
+        "total_weight_kg",
+        "verified_items",
+        "forum_posts",
+        "streak_days",
+        "special"
+      ],
+      "description": "What metric this badge tracks"
+    },
+    "criteria_value": {
+      "type": "number",
+      "description": "Value needed to earn this badge"
+    },
+    "rarity": {
+      "type": "string",
+      "enum": [
+        "common",
+        "rare",
+        "epic",
+        "legendary"
+      ],
+      "default": "common",
+      "description": "Rarity level of the badge"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this badge is currently active"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "category",
+    "criteria_type"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

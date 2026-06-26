@@ -1,0 +1,79 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "earning",
+        "payout",
+        "bonus",
+        "adjustment"
+      ],
+      "description": "Type of transaction"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Transaction amount (positive for earnings, negative for payouts)"
+    },
+    "balance_after": {
+      "type": "number",
+      "description": "Balance after this transaction"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the transaction"
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "Reference to related entity (e.g., EWasteItem ID, PayoutRequest ID)"
+    },
+    "reference_type": {
+      "type": "string",
+      "description": "Type of reference (e.g., 'collection', 'payout', 'bonus')"
+    },
+    "processed_by": {
+      "type": "string",
+      "description": "Email of admin who processed (for payouts/adjustments)"
+    }
+  },
+  "required": [
+    "user_email",
+    "type",
+    "amount",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

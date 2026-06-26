@@ -1,0 +1,73 @@
+{
+  "name": "UserBadge",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who earned the badge"
+    },
+    "badge_id": {
+      "type": "string",
+      "description": "ID of the badge earned"
+    },
+    "badge_name": {
+      "type": "string",
+      "description": "Name of the badge (cached for quick access)"
+    },
+    "badge_icon": {
+      "type": "string",
+      "description": "Icon of the badge (cached)"
+    },
+    "badge_color": {
+      "type": "string",
+      "description": "Color of the badge (cached)"
+    },
+    "badge_rarity": {
+      "type": "string",
+      "description": "Rarity of the badge (cached)"
+    },
+    "earned_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the badge was earned"
+    },
+    "progress_value": {
+      "type": "number",
+      "description": "The value achieved when badge was earned"
+    }
+  },
+  "required": [
+    "user_email",
+    "badge_id",
+    "badge_name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

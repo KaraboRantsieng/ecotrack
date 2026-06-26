@@ -1,0 +1,244 @@
+{
+  "name": "EWasteItem",
+  "type": "object",
+  "properties": {
+    "item_code": {
+      "type": "string",
+      "description": "Unique identifier for this item"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Name/model of the item (e.g., iPhone 12, Samsung TV)"
+    },
+    "item_specs": {
+      "type": "string",
+      "description": "Specifications or description of the item"
+    },
+    "items_in_bag": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of individual item names when multiple items are bagged together"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "mobile_phones",
+        "computers_laptops",
+        "televisions",
+        "batteries",
+        "chargers",
+        "cables",
+        "keyboards",
+        "screens",
+        "printers",
+        "routers",
+        "hard_drives",
+        "speakers",
+        "circuit_boards",
+        "power_supplies",
+        "laptop_ram",
+        "other"
+      ],
+      "description": "Type of e-waste collected"
+    },
+    "weight_kg": {
+      "type": "number",
+      "description": "Weight in kilograms"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of items"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "working",
+        "partially_working",
+        "not_working"
+      ],
+      "default": "not_working",
+      "description": "Condition of the item"
+    },
+    "collector_email": {
+      "type": "string",
+      "description": "Email of the collector"
+    },
+    "location": {
+      "type": "string",
+      "description": "Collection location"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Photos of the item"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether verified"
+    },
+    "rejected": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether rejected/denied"
+    },
+    "auto_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-verified by AI"
+    },
+    "ai_confidence": {
+      "type": "number",
+      "description": "AI confidence score"
+    },
+    "scan_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Scan timestamp"
+    },
+    "co2_saved_kg": {
+      "type": "number",
+      "description": "CO2 saved in kg"
+    },
+    "hazardous_waste_kg": {
+      "type": "number",
+      "description": "Hazardous waste prevented"
+    },
+    "gps_latitude": {
+      "type": "number",
+      "description": "GPS latitude"
+    },
+    "gps_longitude": {
+      "type": "number",
+      "description": "GPS longitude"
+    },
+    "gps_accuracy": {
+      "type": "number",
+      "description": "GPS accuracy in meters"
+    },
+    "geo_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "GPS captured"
+    },
+    "bluetooth_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Weight verified via Bluetooth scale"
+    },
+    "bluetooth_device_id": {
+      "type": "string",
+      "description": "Bluetooth scale device ID"
+    },
+    "bluetooth_device_name": {
+      "type": "string",
+      "description": "Bluetooth scale device name"
+    },
+    "weight_verification_method": {
+      "type": "string",
+      "enum": [
+        "bluetooth",
+        "manual",
+        "ai_estimated"
+      ],
+      "default": "manual",
+      "description": "How weight was verified"
+    },
+    "fraud_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Fraud detection flags"
+    },
+    "fraud_risk_score": {
+      "type": "number",
+      "description": "Fraud risk score 0-100"
+    },
+    "collector_locked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Collector temporarily locked due to fraud"
+    },
+    "serial_number": {
+      "type": "string",
+      "description": "Device serial number / PSN / IMEI extracted from badge photo by AI"
+    },
+    "serial_number_photo_url": {
+      "type": "string",
+      "description": "Photo URL of the serial number / PSN badge sticker"
+    },
+    "psn_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "AI successfully extracted and verified a unique serial number from the PSN photo"
+    },
+    "has_psn_photo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether collector provided a PSN/serial number badge photo"
+    },
+    "psn_identifier_type": {
+      "type": "string",
+      "description": "Type of identifier found: IMEI, Serial Number, PSN, MAC, etc."
+    }
+  },
+  "required": [
+    "item_code",
+    "category",
+    "quantity",
+    "collector_email"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.collector_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

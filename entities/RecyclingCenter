@@ -1,0 +1,64 @@
+{
+  "name": "RecyclingCenter",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the recycling center"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full address"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "GPS latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "GPS longitude"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "operating_hours": {
+      "type": "string",
+      "description": "Operating hours"
+    },
+    "accepted_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Types of e-waste accepted"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether center is currently operational"
+    }
+  },
+  "required": [
+    "name",
+    "address"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": true,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
