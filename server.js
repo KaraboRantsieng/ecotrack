@@ -7,6 +7,8 @@ import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 const Database = require('better-sqlite3')
+let sharp
+try { sharp = require('sharp') } catch { /* image hashing unavailable */ }
 
 // ── Load .env ─────────────────────────────────────────────────────────────────
 try {
@@ -54,6 +56,12 @@ db.exec(`
     created_date TEXT,
     PRIMARY KEY (id, entity_type)
   );
+  CREATE TABLE IF NOT EXISTS image_hashes (
+    filename     TEXT PRIMARY KEY,
+    hash         TEXT NOT NULL,
+    collector_id TEXT,
+    created_at   TEXT
+  );
 `)
 // Migrate existing DBs that predate these columns
 ;['password_hash TEXT', 'google_id TEXT'].forEach(col => {
@@ -79,6 +87,47 @@ function verifyPassword(password, stored) {
       catch { resolve(false) }
     })
   })
+}
+
+// ── Fraud-detection helpers ───────────────────────────────────────────────────
+async function computeDHash(base64Data) {
+  if (!sharp) return null
+  try {
+    const buffer = Buffer.from(base64Data, 'base64')
+    const { data } = await sharp(buffer)
+      .resize(9, 8, { fit: 'fill' })
+      .grayscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    let hash = ''
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        hash += data[y * 9 + x] > data[y * 9 + x + 1] ? '1' : '0'
+      }
+    }
+    return hash
+  } catch { return null }
+}
+
+function hammingDistance(h1, h2) {
+  if (!h1 || !h2 || h1.length !== h2.length) return 64
+  let dist = 0
+  for (let i = 0; i < h1.length; i++) if (h1[i] !== h2[i]) dist++
+  return dist
+}
+
+function extractKeywords(text) {
+  if (!text) return new Set()
+  return new Set(
+    text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 4)
+  )
+}
+
+function keywordOverlap(a, b) {
+  if (!a.size || !b.size) return 0
+  let shared = 0
+  for (const w of a) if (b.has(w)) shared++
+  return shared / Math.max(a.size, b.size)
 }
 
 // ── Misc helpers ──────────────────────────────────────────────────────────────
@@ -324,6 +373,47 @@ const server = createServer(async (req, res) => {
         const id = data.id || randomUUID()
         const now = new Date().toISOString()
         const record = { created_date: now, ...data, id }
+
+        // ── EWasteItem fraud enforcement ────────────────────────────────────
+        if (entityType === 'EWasteItem') {
+          const hasSerial = data.serial_number && String(data.serial_number).trim().length >= 4
+
+          // Layer 3: no serial → hold for admin review, block payout
+          if (!hasSerial) {
+            record.verification_status = 'pending_no_serial'
+            record.verified = false
+            record.payout_blocked = true
+          } else {
+            record.verification_status = record.verification_status || 'serial_verified'
+          }
+
+          // Layer 2: visual fingerprint similarity vs same collector + category
+          if (data.visual_fingerprint && data.collector_email) {
+            const newKw = extractKeywords(data.visual_fingerprint)
+            const existing = db.prepare(
+              "SELECT data FROM entities WHERE entity_type = 'EWasteItem'"
+            ).all().map(r => JSON.parse(r.data)).filter(e =>
+              e.collector_email === data.collector_email &&
+              e.category === data.category &&
+              e.visual_fingerprint
+            )
+            for (const item of existing) {
+              const overlap = keywordOverlap(newKw, extractKeywords(item.visual_fingerprint))
+              if (overlap > 0.6) {
+                record.visual_duplicate_flag = true
+                record.visual_duplicate_item = item.item_code || item.id
+                if (record.verification_status !== 'pending_no_serial') {
+                  record.verification_status = 'pending_visual_duplicate'
+                  record.verified = false
+                  record.payout_blocked = true
+                }
+                break
+              }
+            }
+          }
+        }
+        // ───────────────────────────────────────────────────────────────────
+
         db.prepare('INSERT OR REPLACE INTO entities (id, entity_type, data, created_date) VALUES (?, ?, ?, ?)').run(
           id, entityType, JSON.stringify(record), now
         )
@@ -361,7 +451,27 @@ const server = createServer(async (req, res) => {
       const ext = (filename.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
       const name = `${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`
       writeFileSync(join(UPLOADS, name), Buffer.from(data, 'base64'))
-      json(res, 200, { file_url: `/uploads/${name}` })
+
+      // Layer 1: perceptual hash + duplicate detection
+      let duplicateWarning = null
+      const imageHash = await computeDHash(data)
+      if (imageHash) {
+        const existingHashes = db.prepare(
+          'SELECT filename, hash FROM image_hashes WHERE collector_id = ?'
+        ).all(session.user.id)
+        for (const row of existingHashes) {
+          const dist = hammingDistance(imageHash, row.hash)
+          if (dist <= 10) {
+            duplicateWarning = { similar_file: row.filename, hamming_distance: dist }
+            break
+          }
+        }
+        db.prepare(
+          'INSERT OR REPLACE INTO image_hashes (filename, hash, collector_id, created_at) VALUES (?, ?, ?, ?)'
+        ).run(name, imageHash, session.user.id, new Date().toISOString())
+      }
+
+      json(res, 200, { file_url: `/uploads/${name}`, image_hash: imageHash, duplicate_warning: duplicateWarning })
     } catch (e) { json(res, 500, { error: e.message }) }
     return
   }

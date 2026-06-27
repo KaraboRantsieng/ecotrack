@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import AdminFraudAlerts from "@/components/fraud/AdminFraudAlerts";
+import AdminVerificationQueue from "@/components/fraud/AdminVerificationQueue";
 
 export default function AdminDashboard() {
   const { data: allItems = [] } = useQuery({
@@ -116,6 +117,9 @@ export default function AdminDashboard() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-gray-600">Monitor e-waste collection activities</p>
         </div>
+
+        {/* Verification Queue — items held pending admin review */}
+        <AdminVerificationQueue />
 
         {/* Fraud Alerts Panel */}
         <AdminFraudAlerts />

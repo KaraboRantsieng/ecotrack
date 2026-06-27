@@ -82,6 +82,7 @@ export default function ScanItem() {
   // PSN / Serial number fraud state
   const [psnResult, setPsnResult] = useState(null); // { valid, no_serial, photo_url, serial_number, duplicate }
   const [photoSerialDuplicate, setPhotoSerialDuplicate] = useState(null); // { serial, existingItemCode }
+  const [imageHashWarning, setImageHashWarning] = useState(null); // Layer 1: perceptual hash duplicate
 
   // Bluetooth scale state
   const [bluetoothConnected, setBluetoothConnected] = useState(false);
@@ -450,6 +451,8 @@ Provide accurate classification with the following details:
 
 9. SERIAL_NUMBER: Scan the image for ANY visible serial number, PSN, IMEI, SSID, or MAC address printed on the device, label, or sticker. Return the exact characters if found, or null if none is visible. This is used for duplicate/fraud detection.
 
+10. VISUAL_FINGERPRINT: Describe the unique visual characteristics of THIS SPECIFIC ITEM in 2-3 sentences. Include: dominant colors, any visible damage (cracks, burns, missing parts, dents), any stickers or handwritten labels, connector types, brand text visible, and any anomalies. Be specific enough that this description alone could distinguish this exact item from other identical models.
+
 Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
         file_urls: [imageUrl],
         response_json_schema: {
@@ -496,6 +499,10 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
             identifier_type: {
               type: "string",
               description: "Type of identifier found: IMEI, Serial Number, PSN, SSID, MAC, or null"
+            },
+            visual_fingerprint: {
+              type: "string",
+              description: "Unique visual description: colors, damage, stickers, connectors, brand markings"
             }
             },
             required: ["category", "weight_kg", "condition", "confidence", "description"]
@@ -548,7 +555,7 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
         }
       }
 
-      // Pre-fill form with AI results
+      // Pre-fill form with AI results (including visual fingerprint for Layer 2)
       setFormData(prev => ({
         ...prev,
         item_name: result.item_name || '',
@@ -557,7 +564,8 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
         weight_kg: result.weight_kg.toString(),
         condition: result.condition,
         quantity: result.quantity || 1,
-        notes: `AI Analysis: ${result.description}`
+        notes: `AI Analysis: ${result.description}`,
+        _visual_fingerprint: result.visual_fingerprint || null,
       }));
 
       // Switch to manual tab so user can review and submit
@@ -585,12 +593,23 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
 
     setUploadingPhoto(true);
     setFraudWarnings([]);
+    setImageHashWarning(null);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const uploadResult = await base44.integrations.Core.UploadFile({ file });
+      const file_url = uploadResult.file_url;
       const preview = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, photo_urls: [file_url, ...(prev.photo_urls || [])] }));
       setPhotoPreviews(prev => [preview, ...prev]);
-      
+
+      // Layer 1: show perceptual hash duplicate warning
+      if (uploadResult.duplicate_warning) {
+        setImageHashWarning(uploadResult.duplicate_warning);
+        setFraudWarnings(prev => [
+          ...prev,
+          '⚠️ This photo looks identical to a previous submission. Possible duplicate image detected.'
+        ]);
+      }
+
       // Start AI analysis but don't block on it
       analyzeImageWithAI(file_url).catch(err => {
         console.error("AI analysis failed:", err);
@@ -663,6 +682,8 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
           psn_verified: !!(psnResult?.serial_number && !psnResult?.duplicate) && !photoSerialDuplicate,
           has_psn_photo: !!psnResult?.photo_url,
           psn_identifier_type: psnResult?.identifier_type || formData._ai_identifier_type || null,
+          visual_fingerprint: formData._visual_fingerprint || null,
+          image_hash_duplicate: !!imageHashWarning,
           fraud_flags: photoSerialDuplicate
             ? [...(fraudWarnings || []), `Duplicate serial from item photo: ${photoSerialDuplicate.serial}`]
             : (fraudWarnings.length > 0 ? fraudWarnings : [])
@@ -808,7 +829,19 @@ Be specific and accurate. Weight estimation is CRITICAL for fraud prevention.`,
                 </div>
               )}
             </div>
-            {success.autoVerified ? (
+            {success.item?.verification_status?.startsWith('pending') ? (
+              <Alert className="bg-orange-50 border-orange-300 mb-4">
+                <AlertTriangle className="w-4 h-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <p className="font-semibold">Payout held — awaiting admin review</p>
+                  <p className="text-xs mt-1">
+                    {success.item.verification_status === 'pending_no_serial'
+                      ? 'No serial number found. An admin will verify this item before payout is released.'
+                      : 'Visual similarity to a previous submission detected. Admin review required before payout.'}
+                  </p>
+                </AlertDescription>
+              </Alert>
+            ) : success.autoVerified ? (
               <Alert className="bg-green-50 border-green-200 mb-4">
                 <Shield className="w-4 h-4 text-green-600" />
                 <AlertDescription className="text-green-800">
