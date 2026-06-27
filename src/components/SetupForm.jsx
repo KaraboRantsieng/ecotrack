@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Recycle, Leaf, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -106,13 +106,8 @@ export default function SetupForm() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-            <Recycle className="w-9 h-9 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">EcoTrack</h1>
-          <p className="text-emerald-600 text-sm mt-1 flex items-center gap-1">
-            <Leaf className="w-4 h-4" /> E-Waste Tracking Platform
-          </p>
+          <img src="/logo.png" alt="EcoTrack" className="w-32 h-32 object-contain drop-shadow-md" />
+          <p className="text-emerald-600 text-sm mt-2">E-Waste Tracking Platform</p>
         </div>
 
         <Card className="border-none shadow-xl">

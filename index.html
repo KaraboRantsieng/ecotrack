@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#059669" />
     <meta name="description" content="Track e-waste collections, verify items with AI, and generate compliance reports." />
@@ -10,11 +11,61 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="EcoTrack" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>EcoTrack — E-Waste Tracking</title>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        z-index: 9999;
+        transition: opacity 0.4s ease;
+      }
+      #splash img {
+        width: 160px;
+        height: 160px;
+        object-fit: contain;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      #splash p {
+        margin-top: 16px;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        color: #6b7280;
+        letter-spacing: 0.05em;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.75; transform: scale(0.96); }
+      }
+      #splash.hidden { opacity: 0; pointer-events: none; }
+    </style>
   </head>
   <body>
+    <!-- Splash shown while React bundle loads -->
+    <div id="splash">
+      <img src="/logo.png" alt="EcoTrack" />
+      <p>Loading EcoTrack…</p>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Hide splash once React has mounted
+      document.addEventListener('DOMContentLoaded', () => {
+        const splash = document.getElementById('splash')
+        const observer = new MutationObserver(() => {
+          if (document.getElementById('root').children.length > 0) {
+            splash.classList.add('hidden')
+            setTimeout(() => splash.remove(), 450)
+            observer.disconnect()
+          }
+        })
+        observer.observe(document.getElementById('root'), { childList: true })
+      })
+    </script>
   </body>
 </html>
