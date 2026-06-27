@@ -510,8 +510,16 @@ const server = createServer(async (req, res) => {
   res.end(readFileSync(filePath))
 })
 
-server.listen(PORT, () => {
-  console.log(`\n✅ EcoTrack running at http://localhost:${PORT}\n`)
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n✅ EcoTrack running at http://0.0.0.0:${PORT}\n`)
   if (!process.env.VITE_ANTHROPIC_API_KEY) console.warn('⚠️  AI disabled — set VITE_ANTHROPIC_API_KEY in .env\n')
   if (!process.env.VITE_GOOGLE_CLIENT_ID) console.warn('⚠️  Google login disabled — set VITE_GOOGLE_CLIENT_ID in .env\n')
+})
+
+// Keep the process alive — unhandled rejections must NOT crash the server
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection (non-fatal):', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception (non-fatal):', err)
 })

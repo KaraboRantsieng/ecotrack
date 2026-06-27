@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci", "npm rebuild better-sqlite3", "npm rebuild sharp"]
 
 [phases.build]
 cmds = ["npm run build"]
