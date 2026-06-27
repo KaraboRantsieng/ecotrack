@@ -123,6 +123,14 @@ function getSession(req) {
   return user ? { token, user } : null
 }
 
+function getAdminEmails() {
+  return (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+}
+
+function resolveRole(email) {
+  return getAdminEmails().includes(email.trim().toLowerCase()) ? 'admin' : 'collector'
+}
+
 function userToObj(u) {
   const extra = JSON.parse(u.extra || '{}')
   return {
@@ -166,9 +174,10 @@ const server = createServer(async (req, res) => {
       }
       const id = randomUUID()
       const password_hash = await hashPassword(password)
+      const assignedRole = resolveRole(email)  // admin only if email is in ADMIN_EMAILS
       db.prepare(
         'INSERT INTO users (id, email, full_name, role, area, created_date, password_hash, extra) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, email, full_name, role, area, new Date().toISOString(), password_hash, '{}')
+      ).run(id, email, full_name, assignedRole, area, new Date().toISOString(), password_hash, '{}')
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
       const token = createSession(id)
       setSessionCookie(res, token)
@@ -182,10 +191,16 @@ const server = createServer(async (req, res) => {
     try {
       const { email, password } = JSON.parse(await readBody(req))
       if (!email || !password) return json(res, 400, { error: 'Email and password are required' })
-      const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email)
+      let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email)
       if (!user || !user.password_hash) return json(res, 401, { error: 'Invalid email or password' })
       const ok = await verifyPassword(password, user.password_hash)
       if (!ok) return json(res, 401, { error: 'Invalid email or password' })
+      // Correct role on login in case env changed
+      const correctRole = resolveRole(email)
+      if (user.role !== correctRole) {
+        db.prepare('UPDATE users SET role = ? WHERE id = ?').run(correctRole, user.id)
+        user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
+      }
       const token = createSession(user.id)
       setSessionCookie(res, token)
       json(res, 200, userToObj(user))
@@ -215,9 +230,10 @@ const server = createServer(async (req, res) => {
 
       if (!user) {
         const id = randomUUID()
+        const assignedRole = resolveRole(email)
         db.prepare(
           'INSERT INTO users (id, email, full_name, role, area, created_date, google_id, extra) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        ).run(id, email, name || email, 'collector', '', new Date().toISOString(), googleId, '{}')
+        ).run(id, email, name || email, assignedRole, '', new Date().toISOString(), googleId, '{}')
         user = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
       } else if (!user.google_id) {
         db.prepare('UPDATE users SET google_id = ? WHERE id = ?').run(googleId, user.id)

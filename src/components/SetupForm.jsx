@@ -124,13 +124,9 @@ export default function SetupForm() {
                 <form onSubmit={handleCompleteProfile} className="space-y-4">
                   <div>
                     <Label>Role</Label>
-                    <Select value={profileForm.role} onValueChange={v => setProfileForm(f => ({ ...f, role: v }))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="collector">Collector</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-600">
+                      Collector
+                    </div>
                   </div>
                   <div>
                     <Label>Area / Region</Label>
@@ -251,13 +247,9 @@ export default function SetupForm() {
                   </div>
                   <div>
                     <Label>Role</Label>
-                    <Select value={regForm.role} onValueChange={v => setRegForm(f => ({ ...f, role: v }))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="collector">Collector</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-600">
+                      Collector — admin access is assigned automatically
+                    </div>
                   </div>
                   <div>
                     <Label>Area / Region <span className="text-gray-400 font-normal">(optional)</span></Label>
