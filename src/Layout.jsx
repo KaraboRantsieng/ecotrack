@@ -2,16 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
-import { 
-  LayoutDashboard, 
-  Scan, 
-  Trophy, 
-  MapPin, 
+import {
+  LayoutDashboard,
+  Scan,
+  Trophy,
+  MapPin,
   User as UserIcon,
   BarChart3,
   Users,
   Recycle,
-  LogOut
+  LogOut,
+  Download,
+  X,
+  Share
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,10 +31,54 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isInStandaloneMode = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  window.navigator.standalone === true
+
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // PWA install prompt
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    if (isInStandaloneMode()) { setInstalled(true); return; }
+
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => {
+      setInstalled(true);
+      setShowInstallBanner(false);
+      setInstallPrompt(null);
+    });
+
+    // On iOS the event never fires — show the manual guide instead
+    if (isIOS() && !isInStandaloneMode()) setShowInstallBanner(true);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (isIOS()) { setShowIOSGuide(true); return; }
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstalled(true);
+      setShowInstallBanner(false);
+    }
+    setInstallPrompt(null);
+  };
 
   useEffect(() => {
     loadUser();
@@ -210,6 +257,18 @@ export default function Layout({ children, currentPageName }) {
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>
               </div>
+
+              {/* PWA install button */}
+              {!installed && showInstallBanner && (
+                <button
+                  onClick={handleInstall}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors text-sm font-medium text-white"
+                >
+                  <Download className="w-4 h-4" />
+                  Install App
+                </button>
+              )}
+
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
@@ -228,9 +287,18 @@ export default function Layout({ children, currentPageName }) {
               <SidebarTrigger className="hover:bg-emerald-50 p-2 rounded-lg transition-colors duration-200">
                 <Recycle className="w-6 h-6 text-emerald-600" />
               </SidebarTrigger>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
                 <h1 className="text-lg font-bold text-gray-900">EcoTrack</h1>
               </div>
+              {!installed && showInstallBanner && (
+                <button
+                  onClick={handleInstall}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Install
+                </button>
+              )}
             </div>
           </header>
 
@@ -240,6 +308,40 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </main>
       </div>
+      {/* iOS install guide modal */}
+      {showIOSGuide && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4" onClick={() => setShowIOSGuide(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900 text-lg">Install EcoTrack</h3>
+              <button onClick={() => setShowIOSGuide(false)} className="p-1 rounded-full hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <ol className="space-y-4 text-sm text-gray-700">
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                <span>Tap the <strong>Share</strong> button <Share className="inline w-4 h-4 text-blue-500" /> at the bottom of your Safari browser</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                <span>Tap <strong>"Add"</strong> in the top-right corner</span>
+              </li>
+            </ol>
+            <p className="text-xs text-gray-400 mt-4 text-center">Works on Safari — Chrome on iOS does not support install</p>
+            <button
+              onClick={() => setShowIOSGuide(false)}
+              className="w-full mt-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </SidebarProvider>
   );
 }
