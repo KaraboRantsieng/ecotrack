@@ -32,10 +32,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isIOSSafari = () => isIOS() && /safari/i.test(navigator.userAgent) && !/crios|fxios|opios|chrome/i.test(navigator.userAgent)
 const isInStandaloneMode = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true
 
+// guide types: 'ios-safari' | 'ios-chrome' | 'android-manual'
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [user, setUser] = useState(null);
@@ -44,7 +46,7 @@ export default function Layout({ children, currentPageName }) {
   // PWA install prompt
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [guideType, setGuideType] = useState(null); // null = closed
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
@@ -62,22 +64,40 @@ export default function Layout({ children, currentPageName }) {
       setInstallPrompt(null);
     });
 
-    // On iOS the event never fires — show the manual guide instead
+    // iOS never fires the event — always show the button with manual guide
     if (isIOS() && !isInStandaloneMode()) setShowInstallBanner(true);
+
+    // Android/desktop: also show the button even if prompt hasn't fired yet
+    // (user may have previously dismissed it)
+    if (!isIOS() && !isInStandaloneMode()) setShowInstallBanner(true);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstall = async () => {
-    if (isIOS()) { setShowIOSGuide(true); return; }
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setInstalled(true);
-      setShowInstallBanner(false);
+    // iOS Chrome — must use Safari
+    if (isIOS() && !isIOSSafari()) {
+      setGuideType('ios-chrome');
+      return;
     }
-    setInstallPrompt(null);
+    // iOS Safari — manual share guide
+    if (isIOS()) {
+      setGuideType('ios-safari');
+      return;
+    }
+    // Android/desktop with saved prompt — trigger it
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setInstalled(true);
+        setShowInstallBanner(false);
+      }
+      setInstallPrompt(null);
+      return;
+    }
+    // Android/desktop — prompt already used or not available, show manual guide
+    setGuideType('android-manual');
   };
 
   useEffect(() => {
@@ -308,34 +328,80 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </main>
       </div>
-      {/* iOS install guide modal */}
-      {showIOSGuide && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4" onClick={() => setShowIOSGuide(false)}>
+      {/* Install guide modal */}
+      {guideType && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4" onClick={() => setGuideType(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 text-lg">Install EcoTrack</h3>
-              <button onClick={() => setShowIOSGuide(false)} className="p-1 rounded-full hover:bg-gray-100">
+              <button onClick={() => setGuideType(null)} className="p-1 rounded-full hover:bg-gray-100">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <ol className="space-y-4 text-sm text-gray-700">
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
-                <span>Tap the <strong>Share</strong> button <Share className="inline w-4 h-4 text-blue-500" /> at the bottom of your Safari browser</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
-                <span>Tap <strong>"Add"</strong> in the top-right corner</span>
-              </li>
-            </ol>
-            <p className="text-xs text-gray-400 mt-4 text-center">Works on Safari — Chrome on iOS does not support install</p>
+
+            {/* iOS Chrome — must switch to Safari */}
+            {guideType === 'ios-chrome' && (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <p className="text-sm font-semibold text-amber-800 mb-1">Chrome on iPhone doesn't support install</p>
+                  <p className="text-xs text-amber-700">You need to open this app in <strong>Safari</strong> to install it.</p>
+                </div>
+                <ol className="space-y-3 text-sm text-gray-700">
+                  <li className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                    <span>Copy the link: <strong className="text-emerald-700 break-all">{window.location.host}</strong></span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                    <span>Open <strong>Safari</strong> and paste the link</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                    <span>Tap <Share className="inline w-4 h-4 text-blue-500" /> <strong>Share → Add to Home Screen</strong></span>
+                  </li>
+                </ol>
+              </>
+            )}
+
+            {/* iOS Safari — share guide */}
+            {guideType === 'ios-safari' && (
+              <ol className="space-y-4 text-sm text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                  <span>Tap the <Share className="inline w-4 h-4 text-blue-500" /> <strong>Share</strong> button at the <strong>bottom</strong> of Safari (the box with an arrow pointing up)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                  <span>Scroll down in the menu until you see <strong>"Add to Home Screen"</strong> and tap it</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                  <span>Tap <strong>"Add"</strong> in the top-right corner — the EcoTrack icon will appear on your home screen</span>
+                </li>
+              </ol>
+            )}
+
+            {/* Android/desktop — Chrome menu guide */}
+            {guideType === 'android-manual' && (
+              <ol className="space-y-4 text-sm text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                  <span>Tap the <strong>⋮ menu</strong> (three dots) in the top-right of Chrome</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                  <span>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                  <span>Tap <strong>"Install"</strong> to confirm</span>
+                </li>
+              </ol>
+            )}
+
             <button
-              onClick={() => setShowIOSGuide(false)}
-              className="w-full mt-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
+              onClick={() => setGuideType(null)}
+              className="w-full mt-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors"
             >
               Got it
             </button>
