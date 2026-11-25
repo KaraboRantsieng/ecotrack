@@ -1,0 +1,69 @@
+name: Publish EcoTrack Android v1.0.4
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/publish-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the publicly hosted release parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/parts
+          urls=(
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/d7109669144f14067e1d238684192c7d_ecotrack-apk-part-01.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/5342a5c39dac573e6678cfaccf222a7f_ecotrack-apk-part-02.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/efe94415d7a78e4b16e52974542f6315_ecotrack-apk-part-03.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/b8283dd5e3c6617e5f0e4b9eeb0b7f9c_ecotrack-apk-part-04.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/28d57866be289b2271eb39bfa7955348_ecotrack-apk-part-05.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/4192b4a4992ae1268be4f610f7f5bcdb_ecotrack-apk-part-06.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/a9cdacca4fef8175d0a4e196272e328d_ecotrack-apk-part-07.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/73c4e6a68bf8c0240fca65c02f3b12f3_ecotrack-apk-part-08.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/4aed5fd4b4e8f6f57efcf9ec92c09afa_ecotrack-apk-part-09.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/9f44f579d3ef7cc354413456fad991ba_ecotrack-apk-part-10.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/85b2116951ad9a6f33b926d4529900df_ecotrack-apk-part-11.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/4271714cf4e0ed041c23879215212445_ecotrack-apk-part-12.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/9ecbe7e97804b6bcd51dac4789173113_ecotrack-apk-part-13.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/cb39cfb1cc6ad869ac911846a1e2e639_ecotrack-apk-part-14.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/647fc80cebfee9111ebf54aeb2a3161c_ecotrack-apk-part-15.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/4cdcf396bd72cd0bb6ceac8ae4f79120_ecotrack-apk-part-16.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/251b4a926c8cabefc378ba0f6ed09ce2_ecotrack-apk-part-17.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/dc30747e430c89619b24be4fa7dde6de_ecotrack-apk-part-18.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/aeb682ac604418232618a4b48eeb0ede_ecotrack-apk-part-19.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/68e336a8ee993015ad6fb45c540bf396_ecotrack-apk-part-20.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/bdd06483d407d2e4b5603266f095b84f_ecotrack-apk-part-21.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/6982095ddc3fd2d53109e31704a88bb6_ecotrack-apk-part-22.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/cd0776e7bc7047cb17806fee1daee575_ecotrack-apk-part-23.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/6ffc6e08ce2bad44cc91eb8c10c55077_ecotrack-apk-part-24.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/57755835faac46897ec4c45ab22f00c9_ecotrack-apk-part-25.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/8e4c5f964e83ad7043559217da045799_ecotrack-apk-part-26.txt",
+          "https://media.base44.com/files/public/690db95b6478348e9c0e12cb/2b4bd6d59fc753dfea841980c1666ca8_ecotrack-apk-part-27.txt"
+          )
+          for i in "${!urls[@]}"; do
+            printf -v name "%02d.bin" "$((i + 1))"
+            curl --fail --silent --show-error --location "${urls[$i]}" -o "release/parts/$name"
+          done
+          cat release/parts/*.bin > release/EcoTrack-Android-v1.0.4.zip
+          echo "eb8e55cf3194bf464465f8aa662edbd0de79f5dc5ee189838c1104a6b930e106  release/EcoTrack-Android-v1.0.4.zip" | sha256sum --check
+          unzip -t release/EcoTrack-Android-v1.0.4.zip
+          unzip -j release/EcoTrack-Android-v1.0.4.zip EcoTrack-Android-v1.0.4.apk -d release
+          echo "5a85c7fe575f6ada415b28ed33a17fbe70293471e47d9de47ed33c6b517e698b  release/EcoTrack-Android-v1.0.4.apk" | sha256sum --check
+      - name: Publish public GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.0.4 \
+            release/EcoTrack-Android-v1.0.4.apk \
+            release/EcoTrack-Android-v1.0.4.zip \
+            --repo "${{ github.repository }}" \
+            --title "EcoTrack Android v1.0.4" \
+            --notes "Signed Android release. APK SHA-256: 5a85c7fe575f6ada415b28ed33a17fbe70293471e47d9de47ed33c6b517e698b. Existing users of the previous v8 APK must uninstall it before installing this version because the signing certificate changed. Server-hosted Base44 web changes will update without reinstalling the APK; native Android changes still require a new APK."
