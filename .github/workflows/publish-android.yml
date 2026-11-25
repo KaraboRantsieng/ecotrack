@@ -30,9 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v1.0.4 \
-            release/EcoTrack-Android-v1.0.4.apk \
-            release/EcoTrack-Android-v1.0.4.zip \
+          gh release edit v1.0.4 \
             --repo "${{ github.repository }}" \
             --title "EcoTrack Android v1.0.4" \
-            --notes "Signed Android release. APK SHA-256: 5a85c7fe575f6ada415f8aa662edbd0de79f5dc5ee189838c1104a6b930e106. Existing users of the previous v8 APK must uninstall it before installing this version because the signing certificate changed. Server-hosted Base44 web changes will update without reinstalling the APK; native Android changes still require a new APK."
+            --notes "Signed Android release. APK SHA-256: 5a85c7fe575f6ada415b28ed33a17fbe70293471e47d9de47ed33c6b517e698b. Existing users of the previous v8 APK must uninstall it before installing this version because the signing certificate changed. Server-hosted Base44 web changes will update without reinstalling the APK; native Android changes still require a new APK."
